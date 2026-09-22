@@ -5,11 +5,11 @@ import type { Scene } from "../lib/types";
 import ShotRow from "./ShotRow";
 
 const STATUS_STYLES: Record<string, string> = {
-  pending: "bg-gray-700 text-gray-300",
-  shots_ready: "bg-blue-900 text-blue-300",
-  rendering: "bg-yellow-900 text-yellow-300",
-  rendered: "bg-green-900 text-green-300",
-  failed: "bg-red-900 text-red-300",
+  pending: "bg-gray-800 text-gray-400 border border-gray-700",
+  shots_ready: "bg-blue-950 text-blue-300 border border-blue-900",
+  rendering: "bg-yellow-950 text-yellow-300 border border-yellow-900 animate-pulse",
+  rendered: "bg-green-950 text-green-300 border border-green-900",
+  failed: "bg-red-950 text-red-300 border border-red-900",
 };
 
 export default function SceneCard({
@@ -68,25 +68,35 @@ export default function SceneCard({
     }
   }
 
+  const isRendering = scene.status === "rendering";
+
   return (
     <div className="bg-panel border border-white/10 rounded-lg overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left"
+        className="w-full flex items-center justify-between px-4 py-3.5 text-left"
       >
-        <div>
-          <span className="text-gray-100 font-medium">
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] uppercase tracking-widest text-gray-600 font-semibold">
             Scene {scene.scene_number}
-            {scene.scene_title ? ` — ${scene.scene_title}` : ""}
           </span>
-          <span className="text-xs text-gray-500 ml-3">
-            {scene.shots.length} shots · ~{Math.round(totalDuration)}s
+          <span className="text-gray-100 font-medium text-sm">
+            {scene.scene_title ?? ""}
+          </span>
+          <span className="text-xs text-gray-600">
+            {scene.shots.length} shots · {Math.round(totalDuration)}s
           </span>
         </div>
-        <span className={`text-xs px-2 py-1 rounded-full ${STATUS_STYLES[scene.status]}`}>
+        <span className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full font-medium ${STATUS_STYLES[scene.status]}`}>
           {scene.status.replace("_", " ")}
         </span>
       </button>
+
+      {scene.status === "failed" && scene.error_message && (
+        <div className="mx-4 mb-3 bg-red-950/50 border border-red-900 text-red-300 text-xs rounded-md px-3 py-2">
+          {scene.error_message}
+        </div>
+      )}
 
       {expanded && (
         <div className="border-t border-white/10 px-4 py-4">
@@ -122,13 +132,20 @@ export default function SceneCard({
 
             <button
               onClick={handleRender}
-              disabled={rendering || !allImagesChosen}
+              disabled={rendering || isRendering || !allImagesChosen}
               className="ml-auto text-sm bg-accent hover:bg-accent/80 disabled:opacity-30 disabled:cursor-not-allowed text-white font-medium px-4 py-2 rounded-md transition"
               title={!allImagesChosen ? "Pick images for every shot first" : ""}
             >
-              {rendering ? "Rendering… (may take a minute)" : "Render Scene"}
+              {rendering || isRendering ? "Rendering…" : "Render Scene"}
             </button>
           </div>
+
+          {isRendering && (
+            <p className="text-xs text-gray-600 mt-2">
+              Rendering in the background — this page will update automatically once it's done
+              (may take a minute or two, longer if the render service was asleep).
+            </p>
+          )}
 
           {renderError && (
             <div className="bg-red-950/50 border border-red-900 text-red-300 text-sm rounded-md px-3 py-2 mt-3">
