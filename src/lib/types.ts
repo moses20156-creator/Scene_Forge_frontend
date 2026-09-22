@@ -32,6 +32,7 @@ export interface Scene {
   narration_audio_url: string | null;
   video_url: string | null;
   status: SceneStatus;
+  error_message: string | null;
   shots: Shot[];
 }
 
