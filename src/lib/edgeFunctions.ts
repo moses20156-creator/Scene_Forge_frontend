@@ -4,12 +4,24 @@ import type { Scene, PexelsPhoto } from "./types";
 async function invoke<T>(fnName: string, body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke(fnName, { body });
   if (error) {
-    // Supabase's error object doesn't always include the function's own error
-    // message body, so try to surface it if present.
-    const details = (error as any)?.context?.body ?? error.message;
-    throw new Error(typeof details === "string" ? details : JSON.stringify(details));
+    let message = error.message || `${fnName} failed with no error message`;
+    const ctx = (error as any)?.context;
+    if (ctx && typeof ctx.clone === "function") {
+      try {
+        const parsed = await ctx.clone().json();
+        if (parsed?.error) message = parsed.error;
+      } catch {
+        try {
+          const text = await ctx.clone().text();
+          if (text) message = text;
+        } catch {
+          // no readable body at all — fall back to error.message above
+        }
+      }
+    }
+    throw new Error(`[${fnName}] ${message}`);
   }
-  if (data?.error) throw new Error(data.error);
+  if (data?.error) throw new Error(`[${fnName}] ${data.error}`);
   return data as T;
 }
 
